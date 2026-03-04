@@ -10,6 +10,7 @@ import PROMPT_GEMINI from "./prompt/gemini.txt"
 import PROMPT_CODEX from "./prompt/codex_header.txt"
 import PROMPT_TRINITY from "./prompt/trinity.txt"
 import type { Provider } from "@/provider/provider"
+import { Flag } from "@/flag/flag"
 
 export namespace SystemPrompt {
   export function instructions() {
@@ -26,8 +27,13 @@ export namespace SystemPrompt {
     return [PROMPT_ANTHROPIC_WITHOUT_TODO]
   }
 
+  let cachedDate: Date | undefined
+
   export async function environment(model: Provider.Model) {
     const project = Instance.project
+    const date = Flag.OPENCODE_EXPERIMENTAL_CACHE_STABILIZATION
+      ? (cachedDate ??= new Date())
+      : new Date()
     return [
       [
         `You are powered by the model named ${model.api.id}. The exact model ID is ${model.providerID}/${model.api.id}`,
@@ -36,7 +42,7 @@ export namespace SystemPrompt {
         `  Working directory: ${Instance.directory}`,
         `  Is directory a git repo: ${project.vcs === "git" ? "yes" : "no"}`,
         `  Platform: ${process.platform}`,
-        `  Today's date: ${new Date().toDateString()}`,
+        `  Today's date: ${date.toDateString()}`,
         `</env>`,
         `<directories>`,
         `  ${

@@ -109,4 +109,28 @@ Use this skill.
       process.env.OPENCODE_TEST_HOME = home
     }
   })
+
+  test("skills are sorted alphabetically by name for stable cache hash", async () => {
+    await using tmp = await tmpdir({
+      git: true,
+      init: async (dir) => {
+        for (const name of ["zebra", "alpha", "middle"]) {
+          await Bun.write(
+            path.join(dir, ".opencode", "skill", name, "SKILL.md"),
+            `---\nname: ${name}\ndescription: ${name} skill\n---\n# ${name}`,
+          )
+        }
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await SkillTool.init({})
+        const lines = tool.description.split("\n").filter((l: string) => l.includes("name>"))
+        expect(lines[0]).toContain("alpha")
+        expect(lines[1]).toContain("middle")
+        expect(lines[2]).toContain("zebra")
+      },
+    })
+  })
 })

@@ -655,8 +655,10 @@ export namespace SessionPrompt {
 
       await Plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
 
-      // Build system prompt, adding structured output instruction if needed
-      const system = [...(await SystemPrompt.environment(model)), ...(await InstructionPrompt.system())]
+      // Build system prompt: global instructions first (stable), then env + project (dynamic)
+      const instructions = await InstructionPrompt.system()
+      const system = [...instructions.global, ...(await SystemPrompt.environment(model)), ...instructions.project]
+      const systemSplit = instructions.global.length
       const format = lastUser.format ?? { type: "text" }
       if (format.type === "json_schema") {
         system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
@@ -668,6 +670,7 @@ export namespace SessionPrompt {
         abort,
         sessionID,
         system,
+        systemSplit,
         messages: [
           ...MessageV2.toModelMessages(msgs, model),
           ...(isLastStep

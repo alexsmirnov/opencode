@@ -12,12 +12,14 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
 
   // Filter skills by agent permissions if agent provided
   const agent = ctx?.agent
-  const accessibleSkills = agent
-    ? skills.filter((skill) => {
-        const rule = PermissionNext.evaluate("skill", skill.name, agent.permission)
-        return rule.action !== "deny"
-      })
-    : skills
+  const accessibleSkills = (
+    agent
+      ? skills.filter((skill) => {
+          const rule = PermissionNext.evaluate("skill", skill.name, agent.permission)
+          return rule.action !== "deny"
+        })
+      : skills
+  ).toSorted((a, b) => a.name.localeCompare(b.name))
 
   const description =
     accessibleSkills.length === 0
